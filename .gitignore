@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+/slides.md
+/.slides-*.tmp
+/public/**/*.png
+/.env
+/.env.*
+!/.env.example
