@@ -1,5 +1,17 @@
 import { esc, frame } from './slide-html.ts'
 
+/** 最後に掲載された懇親会・交流会の時間帯から終了時刻を取得する。 */
+export function findReceptionEnd(rows: string[][]): string | undefined {
+  for (let index = rows.length - 1; index >= 0; index--) {
+    const [time, ...details] = rows[index]
+    if (!details.some(cell => /懇親会|交流会/.test(cell))) continue
+
+    const end = time?.normalize('NFKC')
+      .match(/\d{1,2}:\d{2}\s*[-‐‑‒–—−~〜]\s*(\d{1,2}:\d{2})/)?.[1]
+    if (end) return end
+  }
+}
+
 /**
  * 長いセルの折り返しを見積もり、投影サイズを保ったまま掲載順にページ分割する。
  * 4列のconnpass形式では時刻と登壇者の幅を確保し、タイトルに残りの幅を使う。

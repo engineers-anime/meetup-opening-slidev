@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import type { MeetupEvent, NextEvent } from './connpass.ts'
 import { eventUrl } from './event-url.ts'
 import { esc, frame } from './slide-html.ts'
-import { renderTimetable } from './timetable.ts'
+import { findReceptionEnd, renderTimetable } from './timetable.ts'
 
 export type Opening = {
   host: { name: string; job: string; hobby: string }
@@ -125,7 +125,13 @@ ${nextImage}
 <div class="event-qr"><img src="${esc(nextQr)}" alt="次回イベントのQRコード" /><span>イベント詳細</span></div>
 </div>` : ''}
 </div>`))
-  sheets.push(divider('懇親会スタート！', 'クロージング'))
+  const receptionEnd = findReceptionEnd(event.rows)
+  sheets.push(frame('クロージング', `<div class="cover">
+
+<h1>懇親会スタート！</h1>
+${receptionEnd ? `<p>${esc(receptionEnd)} 終了予定</p>` : ''}
+
+</div>`))
   return `---
 theme: default
 layout: default
