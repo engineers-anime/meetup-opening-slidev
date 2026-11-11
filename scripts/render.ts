@@ -33,9 +33,10 @@ function eventDate(event: MeetupEvent) {
 /** イベント情報と主催者設定から、Slidev用のMarkdown全体を組み立てる。 */
 export async function render(event: MeetupEvent, result: NextEvent | undefined, opening: Opening) {
   const next = result && 'url' in result ? result : undefined
-  const divider = (title: string, label = 'オープニング') => frame(label, `<div class="cover">
+  const divider = (title: string, label = 'オープニング', subtitle?: string) => frame(label, `<div class="cover">
 
-<h1>${title}</h1>
+<h1>${esc(title)}</h1>${subtitle ? `
+<p>${esc(subtitle)}</p>` : ''}
 
 </div>`)
   const paragraphs = (items: string[]) => items.map(item => `<p>${esc(item)}</p>`).join('\n')
@@ -126,12 +127,7 @@ ${nextImage}
 </div>` : ''}
 </div>`))
   const receptionEnd = findReceptionEnd(event.rows)
-  sheets.push(frame('クロージング', `<div class="cover">
-
-<h1>懇親会スタート！</h1>
-${receptionEnd ? `<p>${esc(receptionEnd)} 終了予定</p>` : ''}
-
-</div>`))
+  sheets.push(divider('懇親会スタート！', 'クロージング', receptionEnd ? `${receptionEnd} 終了` : undefined))
   return `---
 theme: default
 layout: default
