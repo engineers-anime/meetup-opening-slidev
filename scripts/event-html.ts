@@ -1,4 +1,4 @@
-import { load } from 'cheerio'
+import { load, type CheerioAPI } from 'cheerio'
 import { eventUrl } from './event-url.ts'
 
 const heading = 'h1,h2,h3,h4,h5,h6'
@@ -29,6 +29,27 @@ export function readEvent(html: string, url: URL) {
   }
 }
 
+/** ゲスト見出しごとに名前、紹介文、画像、XのIDを取得する。 */
+function readGuests($: CheerioAPI) {
+  return $(heading).toArray().flatMap(node => {
+    const title = clean($(node).text())
+    if (!/^(?:登壇)?ゲスト(?:紹介|プロフィール|登壇者)?$/.test(title)) return []
+    const profile = $(node).nextUntil(heading)
+    const image = profile.find('img[src]').toArray()
+      .map(img => $(img).attr('src')?.trim())
+      .find(src => src?.startsWith('https://'))
+    const blocks = profile.toArray().flatMap(block => {
+      const content = $(block).clone()
+      content.find('br').replaceWith('\n')
+      return content.text().split('\n').map(clean)
+        .filter(Boolean)
+    })
+    const xHandle = blocks.map(line => line.match(/^(?:X|Twitter)\s*[:：]\s*(@[a-z0-9_]+)\b/i)?.[1]).find(Boolean)
+    const [name, ...bio] = blocks.filter(line => !/^(?:X|Twitter|SNS)\s*[:：]/i.test(line))
+    return name && !/^(?:ゲスト)?(?:なし|未定|いません)[。！!]*$/.test(name) ? [{ name, bio, image, xHandle }] : []
+  })
+}
+
 /** イベント本文のHTMLから会場案内と進行表を抽出する。時刻がある先頭行以降を掲載順で保持する。 */
 export function readDescription(html: string) {
   const $ = load(html)
@@ -42,6 +63,7 @@ export function readDescription(html: string) {
   const hasHeader = firstSlot > 0 && /時[間刻]|開始|time/i.test(rows[firstSlot - 1][0])
   const access = section(/会場へのアクセス|会場案内|^会場$/)
   return {
+    guests: readGuests($),
     sponsor: clean(section(/^会場スポンサー$|^会場提供$/).filter('p').first().text()),
     access: access.filter('p').toArray().map(node => clean($(node).text())).filter(Boolean).slice(0, 2),
     columns: hasHeader ? rows[firstSlot - 1] : ['時間', '内容', 'タイトル', '発表者'],

@@ -1,3 +1,4 @@
+import { renderGuest } from './guest.ts'
 import { existsSync } from 'node:fs'
 import QRCode from 'qrcode'
 import type { MeetupEvent, NextEvent } from './connpass.ts'
@@ -45,6 +46,7 @@ export async function render(event: MeetupEvent, result: NextEvent | undefined, 
   const coverImage = thumbnail(event)
   const nextImage = thumbnail(next)
   const nextQr = next?.url ? await QRCode.toDataURL(next.url, { width: 360, margin: 4 }) : ''
+  const guestPages = event.guests.flatMap(renderGuest)
   const sheets = [
     frame('オープニング', `<div class="cover${coverImage ? ' event-visual' : ''}">
 
@@ -78,6 +80,8 @@ ${paragraphs(opening.about).replace(
 <div class="venue">
 <ul>${opening.notes.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
 </div>`),
+    ...(guestPages.length ? [divider('ゲスト紹介')] : []),
+    ...guestPages.map((body, index) => frame(`ゲスト紹介　${index + 1} / ${guestPages.length}`, body)),
     divider('タイムテーブル')
   ]
   sheets.push(...renderTimetable(event.columns, event.rows.map(row =>

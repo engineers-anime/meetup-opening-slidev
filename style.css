@@ -81,3 +81,7 @@
 
 .frame .venue-company { height: 100%; }
 .frame .venue-company h1 { margin: 0; }
+
+.frame .guest-profile { overflow-wrap: anywhere; }
+.frame .guest-profile h1 { font-size: 44px; margin: 0 0 12px; }
+.frame .guest-profile .guest-bio { font-size: 28px; white-space: pre-line; }
