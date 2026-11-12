@@ -9,7 +9,7 @@ export function readEvent(html: string, url: URL) {
   const $ = load(html)
   const meta = (name: string) => $('meta[property="og:' + name + '"]').attr('content') ?? ''
   const match = meta('title').match(/^(.*?)\s*\((\d{4}\/\d{1,2}\/\d{1,2})\s+(\d{1,2}:\d{2})[^)]*\)$/)
-  if (!match) throw new Error('connpass のイベント情報を読み取れません。ブラウザーで保存したHTMLを --html で指定できます。')
+  if (!match) throw new Error('connpass のイベント情報を読み取れません。')
   const canonical = meta('url') ? eventUrl(meta('url')) : url
   if (canonical.pathname !== url.pathname) throw new Error('HTMLとURLのイベントIDが一致しません。')
   const [, title, date, time] = match
@@ -21,9 +21,8 @@ export function readEvent(html: string, url: URL) {
   const description = descriptions.find(item => item.rows.length > 0)
     ?? descriptions[0] ?? readDescription('')
   return {
-    title, date, time, starts, url: canonical.href, image: meta('image'),
+    title, date, starts, url: canonical.href, image: meta('image'),
     place: clean($('.event_place_area .place_name').first().text()),
-    address: clean($('.event_place_area .adr').first().text()),
     hashtag: clean($('a[href*="twitter.com/search"], a[href*="x.com/search"]').first().text()),
     ...description
   }
@@ -50,7 +49,7 @@ function readGuests($: CheerioAPI) {
   })
 }
 
-/** イベント本文のHTMLから会場案内と進行表を抽出する。時刻がある先頭行以降を掲載順で保持する。 */
+/** イベント本文のHTMLから会場提供の社名、ゲスト紹介、進行表を抽出する。時刻がある先頭行以降を掲載順で保持する。 */
 export function readDescription(html: string) {
   const $ = load(html)
   const section = (pattern: RegExp) => $(heading).filter((_, node) =>
@@ -61,11 +60,9 @@ export function readDescription(html: string) {
     $(row).children('th,td').toArray().map(cell => clean($(cell).text())))
   const firstSlot = rows.findIndex(row => /\d{1,2}[:：]\d{2}/.test(row[0] ?? ''))
   const hasHeader = firstSlot > 0 && /時[間刻]|開始|time/i.test(rows[firstSlot - 1][0])
-  const access = section(/会場へのアクセス|会場案内|^会場$/)
   return {
     guests: readGuests($),
     sponsor: clean(section(/^会場スポンサー$|^会場提供$/).filter('p').first().text()),
-    access: access.filter('p').toArray().map(node => clean($(node).text())).filter(Boolean).slice(0, 2),
     columns: hasHeader ? rows[firstSlot - 1] : ['時間', '内容', 'タイトル', '発表者'],
     rows: firstSlot < 0 ? [] : rows.slice(firstSlot).filter(row => row.some(Boolean))
   }

@@ -57,15 +57,3 @@ npm run opening
 次回予告には同じグループで今回より後に始まる公開イベントのうち、最も近いものを表示します。ページ取得ではグループトップの開催予定欄を使います。告知したいイベントが決まっていれば、`--next <次回のconnpass URL>` で指定できます。次回が未公開だと分かっている場合は `--no-next` を使えます。
 
 初回は `npm run opening` でローカルの `slides.md` を生成します。投影だけなら `npm run dev`、生成だけなら `npm run generate -- <URL>`、静的ビルドなら `npm run build` を実行します。
-
-## ローカル画像
-
-イベント画像をローカルで差し替える場合は `public/events/<イベントID>.png` に置きます。差し替え画像がなければ、connpass の画像URLを使います。
-
-`public/` 内の PNG、生成した `slides.md`、ローカルの環境変数ファイルは Git の対象外です。
-
-## ブラウザーで保存したページを使う
-
-ブラウザーで公開イベントページを開き、「ページを保存」で保存した HTML を `--html` に渡せます。次回を別途保存した場合は `--next <URL> --next-html <保存したHTML>` を指定します。
-
-参考デザインは [7/19のオープニング資料](https://docs.google.com/presentation/d/1wrSwjqo5B3mvan8OJfq06VRaD-RFqkbE8TWPLlV6eeo/edit?usp=sharing) の淡いピンクの枠です。

@@ -2,7 +2,6 @@ import { renderGuest } from './guest.ts'
 import { existsSync } from 'node:fs'
 import QRCode from 'qrcode'
 import type { MeetupEvent, NextEvent } from './connpass.ts'
-import { eventUrl } from './event-url.ts'
 import { esc, frame } from './slide-html.ts'
 import { findReceptionEnd, renderTimetable } from './timetable.ts'
 
@@ -12,15 +11,12 @@ export type Opening = {
   notes: string[]
 }
 
-/** 同梱画像を優先し、なければ connpass の公開画像を使う。 */
+/** connpass の公開画像を表示する。 */
 function thumbnail(event?: MeetupEvent) {
   if (!event) return ''
-  const id = eventUrl(event.url).pathname.split('/')[2]
-  const asset = `events/${id}.png`
-  const source = existsSync(new URL(`../public/${asset}`, import.meta.url))
-    ? `/${asset}`
-    : /^https:\/\/media\.connpass\.com\//i.test(event.image ?? '') ? event.image : ''
-  return source ? `<img class="event-thumbnail" src="${esc(source)}" alt="${esc(event.title)}のイベント画像" />` : ''
+  const source = event.image
+  if (!/^https:\/\/media\.connpass\.com\//i.test(source)) return ''
+  return `<img class="event-thumbnail" src="${esc(source)}" alt="${esc(event.title)}のイベント画像" />`
 }
 
 const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'Asia/Tokyo' })

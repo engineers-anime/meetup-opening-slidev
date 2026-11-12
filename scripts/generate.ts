@@ -5,7 +5,6 @@ import { parseArgs } from 'node:util'
 import { spawnSync } from 'node:child_process'
 import { findNext, readRemoteEvent, type NextEvent } from './connpass.ts'
 import { eventUrl } from './event-url.ts'
-import { readEvent } from './event-html.ts'
 import { render, type Opening } from './render.ts'
 
 /** URLを標準入力から受け取り、取得後は入力を閉じる。 */
@@ -24,18 +23,18 @@ async function promptEventUrl() {
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { html: { type: 'string' }, next: { type: 'string' },
-      'next-html': { type: 'string' }, 'no-next': { type: 'boolean' }, open: { type: 'boolean' } }
+    options: { next: { type: 'string' },
+      'no-next': { type: 'boolean' }, open: { type: 'boolean' } }
   })
-  if (positionals.length > 1 || (values['next-html'] && !values.next) || (values.next && values['no-next'])) {
-    throw new Error('使い方: npm run opening -- [connpass URL] [--html 保存したHTML] [--next 次回URL | --no-next]')
+  if (positionals.length > 1 || (values.next && values['no-next'])) {
+    throw new Error('使い方: npm run opening -- [connpass URL] [--next 次回URL | --no-next]')
   }
   const url = eventUrl(positionals[0] ?? await promptEventUrl())
-  const event = values.html ? readEvent(await readFile(values.html, 'utf8'), url) : await readRemoteEvent(url)
+  const event = await readRemoteEvent(url)
   let next: NextEvent | undefined
   if (values.next) {
     const url = eventUrl(values.next)
-    next = values['next-html'] ? readEvent(await readFile(values['next-html'], 'utf8'), url) : await readRemoteEvent(url)
+    next = await readRemoteEvent(url)
     if (next.starts <= event.starts) throw new Error('次回URLには、今回より後に開催されるイベントを指定してください。')
   } else if (!values['no-next']) {
     try {
@@ -45,7 +44,7 @@ async function main() {
       next = { unavailable: true }
     }
   }
-  if (!event.rows.length) throw new Error('タイムテーブルを取得できませんでした。イベントページの保存済みHTMLを --html で指定してください。')
+  if (!event.rows.length) throw new Error('タイムテーブルを取得できませんでした。')
   const temp = `.slides-${randomUUID()}.tmp`
   const opening: Opening = JSON.parse(await readFile(new URL('../opening.json', import.meta.url), 'utf8'))
   await writeFile(temp, await render(event, next, opening))

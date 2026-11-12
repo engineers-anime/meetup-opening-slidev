@@ -13,7 +13,6 @@ type ApiEvent = {
   description?: string
   image_url?: string
   place?: string
-  address?: string
   hash_tag?: string
   group?: { id: number }
   open_status: string
@@ -48,14 +47,13 @@ function fromApi(data: ApiEvent): MeetupEvent {
   const starts = Date.parse(data.started_at)
   if (!data.title || !Number.isFinite(starts)) throw new Error('connpass API のイベント情報が不足しています。')
   const parts = new Intl.DateTimeFormat('ja-JP', {
-    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'
   }).formatToParts(starts)
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value
   return {
     title: data.title, starts, date: [part('year'), part('month'), part('day')].join('/'),
-    time: [part('hour'), part('minute')].join(':'), url: eventUrl(data.url).href,
-    image: data.image_url ?? '', place: data.place ?? '', address: data.address ?? '', groupId: data.group?.id, hashtag: data.hash_tag ?? '',
+    url: eventUrl(data.url).href,
+    image: data.image_url ?? '', place: data.place ?? '', groupId: data.group?.id, hashtag: data.hash_tag ?? '',
     ...readDescription(data.description ?? '')
   }
 }
