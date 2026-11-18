@@ -27,7 +27,7 @@ function eventDate(event: MeetupEvent) {
 }
 
 /** イベント情報と主催者設定から、Slidev用のMarkdown全体を組み立てる。 */
-export async function render(event: MeetupEvent, result: NextEvent | undefined, opening: Opening) {
+export async function render(event: MeetupEvent, result: NextEvent | undefined, opening: Opening, showVenue = false) {
   const next = result && 'url' in result ? result : undefined
   const divider = (title: string, label = 'オープニング', subtitle?: string) => frame(label, `<div class="cover">
 
@@ -36,7 +36,8 @@ export async function render(event: MeetupEvent, result: NextEvent | undefined, 
 
 </div>`)
   const paragraphs = (items: string[]) => items.map(item => `<p>${esc(item)}</p>`).join('\n')
-  const sponsorTalk = event.rows.find(row => row.slice(1).some(cell => /(?:会場提供|スポンサー).*(?:LT|トーク)|(?:LT|トーク).*(?:会場提供|スポンサー)/i.test(cell)))
+  const sponsorTalk = event.rows.find(row => row.slice(1).some(cell =>
+    /(?:会場提供|スポンサー).*(?:LT|トーク)|(?:LT|トーク).*(?:会場提供|スポンサー)/i.test(cell)))
   const companyInPlace = event.place.match(/[（(]([^）)]*(?:株式会社|合同会社|有限会社)[^）)]*)[）)]/)?.[1]
   const venueName = event.sponsor || companyInPlace || event.place || '会場情報はイベントページをご確認ください'
   const hasHostImage = existsSync(new URL('../public/host.png', import.meta.url))
@@ -83,7 +84,7 @@ ${paragraphs(opening.about).replace(
   ]
   sheets.push(...renderTimetable(event.columns, event.rows.map(row =>
     row.map(cell => cell.replaceAll('会場スポンサー', '会場提供')))))
-  sheets.push(
+  if (showVenue) sheets.push(
     divider('会場提供'),
     `<div class="frame">
 
@@ -93,7 +94,9 @@ ${paragraphs(opening.about).replace(
 
 </div>
 
-</div>`,
+</div>`
+  )
+  sheets.push(
     divider('イベントハッシュタグ'),
     frame('イベントハッシュタグ', `<div class="cover">
 
@@ -101,12 +104,10 @@ ${paragraphs(opening.about).replace(
 <p>${event.hashtag ? 'Xで感想をポストしてください！' : 'ハッシュタグはイベントページをご確認ください。'}</p>
 
 </div>`),
-    frame('トーク', `<div class="cover">
-
-<h1>トークスタート！</h1>
-${sponsorTalk ? `<p>${esc(sponsorTalk.slice(1).filter(Boolean).join('　').replaceAll('会場スポンサー', '会場提供'))}</p>` : ''}
-
-</div>`),
+    divider('トークスタート！', 'トーク', showVenue
+      ? sponsorTalk?.slice(1).filter(Boolean).join('　').replaceAll('会場スポンサー', '会場提供')
+        || `${venueName}さんのLT（会場提供）`
+      : undefined),
     divider('トーク終了！', 'クロージング'),
     divider('宣伝', 'クロージング')
   )

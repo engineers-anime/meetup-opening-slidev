@@ -7,13 +7,13 @@ import { findNext, readRemoteEvent, type NextEvent } from './connpass.ts'
 import { eventUrl } from './event-url.ts'
 import { render, type Opening } from './render.ts'
 
-/** URLを標準入力から受け取り、取得後は入力を閉じる。 */
-async function promptEventUrl() {
+/** URLと会場提供ページの表示設定を実行時に受け取る。 */
+async function promptSettings(urlArgument?: string) {
   const input = createInterface({ input: process.stdin, output: process.stdout })
   try {
-    const url = (await input.question('connpass のイベントURL: ')).trim()
-    if (!url) throw new Error('イベントURLを入力してください。')
-    return url
+    const url = eventUrl(urlArgument ?? (await input.question('connpass のイベントURL: ')).trim())
+    const answer = (await input.question('会場提供スライドを表示しますか？（Y/n）: ')).trim()
+    return { url, showVenue: !/^(n|no|いいえ)$/i.test(answer) }
   } finally {
     input.close()
   }
@@ -29,7 +29,7 @@ async function main() {
   if (positionals.length > 1 || (values.next && values['no-next'])) {
     throw new Error('使い方: npm run opening -- [connpass URL] [--next 次回URL | --no-next]')
   }
-  const url = eventUrl(positionals[0] ?? await promptEventUrl())
+  const { url, showVenue } = await promptSettings(positionals[0])
   const event = await readRemoteEvent(url)
   let next: NextEvent | undefined
   if (values.next) {
@@ -47,7 +47,7 @@ async function main() {
   if (!event.rows.length) throw new Error('タイムテーブルを取得できませんでした。')
   const temp = `.slides-${randomUUID()}.tmp`
   const opening: Opening = JSON.parse(await readFile(new URL('../opening.json', import.meta.url), 'utf8'))
-  await writeFile(temp, await render(event, next, opening))
+  await writeFile(temp, await render(event, next, opening, showVenue))
   await rename(temp, 'slides.md')
   console.log(`slides.md を生成しました（進行表 ${event.rows.length} 件）。`)
   if (values.open) process.exitCode = spawnSync('npm', ['run', 'dev'], { stdio: 'inherit' }).status ?? 1
